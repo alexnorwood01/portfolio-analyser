@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Analyser</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f9f9f7;
+    --surface: #ffffff;
+    --surface2: #f3f2ef;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --text: #1a1a18;
+    --text2: #5f5e5a;
+    --text3: #8f8e8a;
+    --blue: #1a6fc4;
+    --blue-bg: #e6f0fb;
+    --green: #0f6e56;
+    --green-bg: #e1f5ee;
+    --amber: #85500b;
+    --amber-bg: #faeeda;
+    --red: #a32d2d;
+    --red-bg: #fcebeb;
+    --purple: #3c3489;
+    --purple-bg: #eeedfe;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #18181a;
+      --surface: #222224;
+      --surface2: #2c2c2e;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.2);
+      --text: #f0efeb;
+      --text2: #a0a09a;
+      --text3: #6a6a64;
+      --blue: #5aa4f0;
+      --blue-bg: #0c2a44;
+      --green: #5dcaa5;
+      --green-bg: #04342c;
+      --amber: #f0a030;
+      --amber-bg: #3a2200;
+      --red: #f09595;
+      --red-bg: #3a1010;
+      --purple: #afa9ec;
+      --purple-bg: #26215c;
+    }
+  }
+
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 0.5px solid var(--border);
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  header h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+  header .version { font-size: 13px; color: var(--text3); font-family: 'Courier New', monospace; }
+
+  .ai-badge {
+    margin-left: auto;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    background: var(--purple-bg);
+    color: var(--purple);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+
+  .container { max-width: 980px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  .card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    margin-bottom: 1.1rem;
+  }
+
+  .input-header {
+    display: grid;
+    grid-template-columns: 120px 1fr 90px 38px;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .input-header span { font-size: 11px; color: var(--text3); font-family: 'Courier New', monospace; }
+
+  .holding-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 90px 38px;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 7px;
+  }
+
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 7px 10px;
+    font-size: 13px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    transition: border-color 0.15s;
+  }
+
+  input:focus { outline: none; border-color: var(--blue); }
+
+  .btn {
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 7px 14px;
+    background: transparent;
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: 'Courier New', monospace;
+  }
+
+  .btn:hover { background: var(--surface2); }
+
+  .btn-remove { color: var(--red); border-color: rgba(163,45,45,0.3); padding: 7px; font-size: 12px; }
+  .btn-remove:hover { background: var(--red-bg); }
+
+  .btn-primary { background: var(--blue); color: #fff; border-color: var(--blue); padding: 8px 20px; font-weight: 600; }
+  .btn-primary:hover { opacity: 0.88; background: var(--blue); }
+
+  .btn-green { background: var(--green); color: #fff; border-color: var(--green); padding: 8px 16px; font-weight: 600; }
+  .btn-green:hover { opacity: 0.88; }
+
+  .btn-load { font-size: 12px; padding: 4px 10px; }
+  .btn-del { font-size: 12px; padding: 4px 10px; color: var(--red); border-color: rgba(163,45,45,0.3); }
+  .btn-del:hover { background: var(--red-bg); }
+
+  .weight-total { font-size: 12px; font-family: 'Courier New', monospace; color: var(--text3); margin: 6px 0 12px; }
+  .weight-total.over { color: var(--red); }
+  .weight-total.ok { color: var(--green); }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+
+  .save-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 0.5px solid var(--border);
+  }
+
+  .save-row input { flex: 1; }
+  .save-row input:focus { border-color: var(--green); }
+
+  .saved-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .saved-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+  }
+
+  .saved-item-info { flex: 1; }
+  .saved-item-name { font-size: 13px; font-weight: 600; font-family: 'Courier New', monospace; }
+  .saved-item-meta { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+  .empty-saved { font-size: 13px; color: var(--text3); text-align: center; padding: 1rem 0; font-family: 'Courier New', monospace; }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+
+  .metric-card { background: var(--surface2); border-radius: var(--radius-sm); padding: 1rem; text-align: center; }
+  .metric-label { font-size: 10px; font-family: 'Courier New', monospace; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+  .metric-value { font-size: 22px; font-weight: 600; font-family: 'Georgia', serif; }
+  .metric-value.pos { color: var(--green); }
+  .metric-value.neg { color: var(--red); }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    padding: 6px 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .stat-row:last-child { border: none; }
+  .stat-label { color: var(--text2); }
+  .stat-val { font-weight: 600; font-family: 'Courier New', monospace; }
+
+  /* Risk table */
+  .risk-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .risk-table th {
+    font-size: 11px;
+    color: var(--text3);
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+    text-align: left;
+    padding: 7px 10px;
+    border-bottom: 0.5px solid var(--border);
+    background: var(--surface2);
+    white-space: nowrap;
+  }
+  .risk-table td { padding: 8px 10px; border-bottom: 0.5px solid var(--border); color: var(--text); vertical-align: middle; }
+  .risk-table tr:last-child td { border: none; }
+  .risk-table tbody tr:hover { background: var(--surface2); }
+
+  .risk-badge { display: inline-block; font-size: 11px; font-family: 'Courier New', monospace; font-weight: 700; padding: 2px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .risk-low  { background: var(--green-bg); color: var(--green); }
+  .risk-med  { background: var(--amber-bg); color: var(--amber); }
+  .risk-high { background: var(--red-bg); color: var(--red); }
+
+  .vol-bar-bg { display: inline-block; vertical-align: middle; width: 70px; height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; margin-left: 6px; }
+  .vol-bar-fill { height: 5px; border-radius: 3px; }
+
+  .risk-note { font-size: 11px; color: var(--text3); font-family: 'Courier New', monospace; margin-top: 10px; }
+
+  /* Correlation */
+  .corr-table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: 'Courier New', monospace; }
+  .corr-table td, .corr-table th { padding: 6px 8px; text-align: center; border: 0.5px solid var(--border); }
+  .corr-table th { font-weight: 600; color: var(--text2); background: var(--surface2); }
+
+  .corr-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+  .corr-legend span { font-size: 11px; font-family: 'Courier New', monospace; color: var(--text3); display: flex; align-items: center; gap: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+  /* Scores */
+  .score-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .score-label { font-size: 12px; font-family: 'Courier New', monospace; color: var(--text2); min-width: 120px; }
+  .score-bar-bg { flex: 1; height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .score-bar { height: 7px; border-radius: 4px; transition: width 0.7s ease; }
+  .score-num { font-size: 13px; font-weight: 600; font-family: 'Courier New', monospace; min-width: 42px; text-align: right; }
+
+  /* Improvements */
+  .improvement-list { list-style: none; }
+  .improvement-list li { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; color: var(--text2); }
+  .improvement-list li:last-child { border: none; }
+
+  .tag { font-size: 10px; font-family: 'Courier New', monospace; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 8px; border-radius: 20px; white-space: nowrap; margin-top: 2px; }
+  .tag-warn   { background: var(--amber-bg); color: var(--amber); }
+  .tag-info   { background: var(--blue-bg);  color: var(--blue); }
+  .tag-danger { background: var(--red-bg);   color: var(--red); }
+  .tag-ok     { background: var(--green-bg); color: var(--green); }
+
+  .chart-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; font-size: 12px; font-family: 'Courier New', monospace; color: var(--text2); }
+  .chart-legend span { display: flex; align-items: center; gap: 5px; }
+  .mc-note { font-size: 11px; color: var(--text3); font-family: 'Courier New', monospace; margin-top: 8px; }
+
+  canvas { display: block; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: var(--green);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-family: 'Courier New', monospace;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 999;
+  }
+  .toast.show { opacity: 1; }
+
+  footer {
+    text-align: center;
+    padding: 2rem;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    color: var(--text3);
+    border-top: 0.5px solid var(--border);
+    margin-top: 2rem;
+  }
+
+  @media (max-width: 640px) {
+    .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+    .input-header, .holding-row { grid-template-columns: 90px 1fr 70px 34px; }
+    header { padding: 1rem; flex-wrap: wrap; }
+    .container { padding: 1.25rem 1rem; }
+    .risk-table { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Portfolio Analyser</h1>
+  <span class="version">v2.0</span>
+  <span class="ai-badge">AI estimated</span>
+</header>
+
+<div class="container">
+
+  <!-- Holdings input -->
+  <div class="card">
+    <div class="card-title">Portfolio holdings</div>
+    <div class="input-header">
+      <span>Ticker</span>
+      <span>Name</span>
+      <span>Weight %</span>
+      <span></span>
+    </div>
+    <div id="holdings"></div>
+    <div class="weight-total" id="weight-total">Total: 0%</div>
+    <div class="actions">
+      <button class="btn" onclick="addRow()">+ Add stock</button>
+      <button class="btn btn-primary" onclick="analyse()">Analyse portfolio →</button>
+    </div>
+    <div class="save-row">
+      <input type="text" id="portfolio-name" placeholder="Portfolio name (e.g. Growth 2026)" />
+      <button class="btn btn-green" onclick="savePortfolio()">Save portfolio</button>
+    </div>
+  </div>
+
+  <!-- Saved portfolios -->
+  <div class="card">
+    <div class="card-title">Saved portfolios</div>
+    <div id="saved-list"><p class="empty-saved">No saved portfolios yet.</p></div>
+  </div>
+
+  <!-- Results -->
+  <div id="results" style="display:none">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+      <span style="font-size:16px;font-weight:600;font-family:'Georgia',serif;">Analysis results</span>
+      <span class="ai-badge">AI estimated · not financial advice</span>
+    </div>
+
+    <!-- Summary metrics -->
+    <div class="metrics-grid" id="metrics-grid"></div>
+
+    <!-- Returns chart -->
+    <div class="card">
+      <div class="card-title">Returns by period</div>
+      <div class="chart-legend" id="returns-legend"></div>
+      <div style="position:relative;height:230px">
+        <canvas id="returnsChart" role="img" aria-label="Bar chart showing returns by period per stock"></canvas>
+      </div>
+    </div>
+
+    <!-- Individual stock risk -->
+    <div class="card">
+      <div class="card-title">Individual stock risk &amp; standard deviation</div>
+      <div id="stock-risk-table"></div>
+    </div>
+
+    <!-- Monte Carlo + Portfolio vol -->
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Monte Carlo — 5-year projection</div>
+        <div style="position:relative;height:220px">
+          <canvas id="mcChart" role="img" aria-label="Monte Carlo simulation paths over 5 years"></canvas>
+        </div>
+        <p class="mc-note">1,000 simulated paths · shaded band = 10th–90th percentile</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Portfolio volatility &amp; risk</div>
+        <div id="vol-stats"></div>
+      </div>
+    </div>
+
+    <!-- Correlation + Scores -->
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Correlation matrix</div>
+        <div id="corr-matrix"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Portfolio scores</div>
+        <div id="scores"></div>
+      </div>
+    </div>
+
+    <!-- Improvements -->
+    <div class="card">
+      <div class="card-title">Areas of improvement</div>
+      <ul class="improvement-list" id="improvements"></ul>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  Portfolio Analyser v2.0 · Returns are AI-estimated. Not financial advice. Portfolios saved locally in your browser.
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── Data ─────────────────────────────────────────────────────────────── */
+const STOCK_DATA = {
+  AAPL: { name: "Apple",        ann: 0.26, vol: 0.28, beta: 1.20 },
+  MSFT: { name: "Microsoft",    ann: 0.28, vol: 0.25, beta: 1.10 },
+  GOOGL:{ name: "Alphabet",     ann: 0.22, vol: 0.27, beta: 1.15 },
+  AMZN: { name: "Amazon",       ann: 0.24, vol: 0.32, beta: 1.30 },
+  NVDA: { name: "Nvidia",       ann: 0.45, vol: 0.55, beta: 1.80 },
+  TSLA: { name: "Tesla",        ann: 0.35, vol: 0.65, beta: 2.00 },
+  META: { name: "Meta",         ann: 0.25, vol: 0.35, beta: 1.25 },
+  JPM:  { name: "JPMorgan",     ann: 0.14, vol: 0.22, beta: 1.00 },
+  JNJ:  { name: "J&J",          ann: 0.09, vol: 0.15, beta: 0.55 },
+  XOM:  { name: "Exxon",        ann: 0.12, vol: 0.24, beta: 0.90 },
+  BRK:  { name: "Berkshire",    ann: 0.13, vol: 0.18, beta: 0.80 },
+  SPY:  { name: "S&P 500 ETF",  ann: 0.13, vol: 0.16, beta: 1.00 },
+  QQQ:  { name: "Nasdaq ETF",   ann: 0.18, vol: 0.22, beta: 1.15 },
+  GLD:  { name: "Gold ETF",     ann: 0.07, vol: 0.14, beta: -0.05 },
+  BND:  { name: "Bond ETF",     ann: 0.04, vol: 0.06, beta: -0.10 },
+};
+
+let rows = [];
+let charts = {};
+
+function getStock(ticker) {
+  const t = ticker.toUpperCase();
+  if (STOCK_DATA[t]) return { ...STOCK_DATA[t], ticker: t };
+  const seed = t.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const r = (s, mn, mx) => { const x = Math.sin(s) * 10000; return mn + (x - Math.floor(x)) * (mx - mn); };
+  return { name: t, ann: r(seed, 0.06, 0.30), vol: r(seed+1, 0.15, 0.50), beta: r(seed+2, 0.4, 1.8), ticker: t };
+}
+
+/* ── Toast ────────────────────────────────────────────────────────────── */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+/* ── Save / Load ──────────────────────────────────────────────────────── */
+function getSaved() {
+  try { return JSON.parse(localStorage.getItem('pa_portfolios') || '[]'); } catch { return []; }
+}
+
+function savePortfolio() {
+  const name = document.getElementById('portfolio-name').value.trim();
+  if (!name) { showToast('Please enter a portfolio name first.'); return; }
+  const stocks = getPortfolio();
+  if (!stocks.length) { showToast('Add at least one stock first.'); return; }
+  const saved = getSaved();
+  const idx = saved.findIndex(p => p.name === name);
+  const entry = { name, stocks, date: new Date().toLocaleDateString() };
+  if (idx >= 0) saved[idx] = entry; else saved.push(entry);
+  localStorage.setItem('pa_portfolios', JSON.stringify(saved));
+  renderSaved();
+  showToast('"' + name + '" saved!');
+}
+
+function loadPortfolio(name) {
+  const p = getSaved().find(x => x.name === name);
+  if (!p) return;
+  rows = [];
+  document.getElementById('holdings').innerHTML = '';
+  p.stocks.forEach(s => addRow(s.ticker, s.name, (s.weight * 100).toFixed(1)));
+  document.getElementById('portfolio-name').value = name;
+  showToast('"' + name + '" loaded.');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function deletePortfolio(name) {
+  if (!confirm('Delete "' + name + '"?')) return;
+  localStorage.setItem('pa_portfolios', JSON.stringify(getSaved().filter(p => p.name !== name)));
+  renderSaved();
+  showToast('"' + name + '" deleted.');
+}
+
+function renderSaved() {
+  const saved = getSaved();
+  const el = document.getElementById('saved-list');
+  if (!saved.length) { el.innerHTML = '<p class="empty-saved">No saved portfolios yet.</p>'; return; }
+  el.innerHTML = saved.map(p => `
+    <div class="saved-item">
+      <div class="saved-item-info">
+        <div class="saved-item-name">${escHtml(p.name)}</div>
+        <div class="saved-item-meta">${p.stocks.length} stock${p.stocks.length !== 1 ? 's' : ''} · saved ${p.date}</div>
+      </div>
+      <button class="btn btn-load" onclick="loadPortfolio(${JSON.stringify(p.name)})">Load</button>
+      <button class="btn btn-del"  onclick="deletePortfolio(${JSON.stringify(p.name)})">Delete</button>
+    </div>`).join('');
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ── Holdings ─────────────────────────────────────────────────────────── */
+function addRow(ticker = '', name = '', weight = '') {
+  const id = Date.now() + Math.random();
+  rows.push({ id });
+  renderRows();
+  if (ticker) {
+    document.querySelector(`[data-id="${id}"] .t-ticker`).value = ticker;
+    document.querySelector(`[data-id="${id}"] .t-name`).value   = name;
+    document.querySelector(`[data-id="${id}"] .t-weight`).value = weight;
+    updateWeight();
+  }
+}
+
+function removeRow(id) { rows = rows.filter(r => r.id !== id); renderRows(); }
+
+function renderRows() {
+  document.getElementById('holdings').innerHTML = rows.map(r => `
+    <div class="holding-row" data-id="${r.id}">
+      <input type="text"   class="t-ticker" placeholder="AAPL"       oninput="updateWeight()" style="text-transform:uppercase">
+      <input type="text"   class="t-name"   placeholder="Auto-filled">
+      <input type="number" class="t-weight" placeholder="%" min="0" max="100" step="0.1" oninput="updateWeight()">
+      <button class="btn btn-remove" onclick="removeRow(${r.id})">✕</button>
+    </div>`).join('');
+  updateWeight();
+}
+
+function updateWeight() {
+  let total = 0;
+  document.querySelectorAll('.t-weight').forEach(el => { total += parseFloat(el.value) || 0; });
+  const el = document.getElementById('weight-total');
+  el.textContent = 'Total: ' + total.toFixed(1) + '%';
+  el.className = 'weight-total' + (total > 100.1 ? ' over' : total >= 99.5 ? ' ok' : '');
+  document.querySelectorAll('.holding-row').forEach(row => {
+    const ticker = row.querySelector('.t-ticker').value.toUpperCase();
+    const nameEl = row.querySelector('.t-name');
+    if (ticker && !nameEl.value && STOCK_DATA[ticker]) nameEl.value = STOCK_DATA[ticker].name;
+  });
+}
+
+function getPortfolio() {
+  const stocks = [];
+  document.querySelectorAll('.holding-row').forEach(row => {
+    const ticker = row.querySelector('.t-ticker').value.trim().toUpperCase();
+    const weight = parseFloat(row.querySelector('.t-weight').value) || 0;
+    if (ticker && weight > 0) stocks.push({ ...getStock(ticker), weight: weight / 100 });
+  });
+  return stocks;
+}
+
+/* ── Helpers ──────────────────────────────────────────────────────────── */
+function periodReturn(ann, years) { return Math.pow(1 + ann, years) - 1; }
+function sixMonthReturn(ann) { return Math.pow(1 + ann, 0.5) - 1; }
+function weekReturn(ann) { return Math.pow(1 + ann, 1 / 52) - 1; }
+function fmtPct(v) { return (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%'; }
+function destroyChart(key) { if (charts[key]) { charts[key].destroy(); delete charts[key]; } }
+
+/* ── Analyse ──────────────────────────────────────────────────────────── */
+function analyse() {
+  const stocks = getPortfolio();
+  if (!stocks.length) { alert('Add at least one stock with a weight.'); return; }
+  const totalW = stocks.reduce((a, s) => a + s.weight, 0);
+  if (Math.abs(totalW - 1) > 0.015) { alert('Weights must sum to 100%. Currently: ' + Math.round(totalW * 100) + '%'); return; }
+
+  document.getElementById('results').style.display = 'block';
+  setTimeout(() => document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+
+  const portAnn  = stocks.reduce((a, s) => a + s.weight * s.ann, 0);
+  const portVol  = Math.sqrt(stocks.reduce((a, s) => a + Math.pow(s.weight * s.vol, 2), 0)) * 1.1;
+  const portBeta = stocks.reduce((a, s) => a + s.weight * s.beta, 0);
+  const sharpe   = (portAnn - 0.045) / portVol;
+
+  /* Metric cards */
+  document.getElementById('metrics-grid').innerHTML = [
+    { label: '10-year return', val: fmtPct(periodReturn(portAnn, 10)), pos: portAnn >= 0 },
+    { label: '5-year return',  val: fmtPct(periodReturn(portAnn, 5)),  pos: portAnn >= 0 },
+    { label: '6-month return', val: fmtPct(sixMonthReturn(portAnn)),   pos: portAnn >= 0 },
+    { label: '1-week return',  val: fmtPct(weekReturn(portAnn)),       pos: portAnn >= 0 },
+  ].map(m => `<div class="metric-card"><div class="metric-label">${m.label}</div><div class="metric-value ${m.pos ? 'pos' : 'neg'}">${m.val}</div></div>`).join('');
+
+  /* Returns chart */
+  destroyChart('returns');
+  const colors  = ['#1a6fc4', '#0f6e56', '#d97b0c', '#a02868'];
+  const periods = [
+    { label: '10Y', data: stocks.map(s => +(periodReturn(s.ann, 10) * 100).toFixed(1)) },
+    { label: '5Y',  data: stocks.map(s => +(periodReturn(s.ann, 5)  * 100).toFixed(1)) },
+    { label: '6M',  data: stocks.map(s => +(sixMonthReturn(s.ann)   * 100).toFixed(1)) },
+    { label: '1W',  data: stocks.map(s => +(weekReturn(s.ann)       * 100).toFixed(1)) },
+  ];
+  document.getElementById('returns-legend').innerHTML = periods.map((p, i) =>
+    `<span><span class="dot" style="background:${colors[i]}"></span>${p.label}</span>`).join('');
+  charts['returns'] = new Chart(document.getElementById('returnsChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: stocks.map(s => s.ticker),
+      datasets: periods.map((p, i) => ({ label: p.label, data: p.data, backgroundColor: colors[i], borderRadius: 3 }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { ticks: { callback: v => v + '%', color: '#8f8e8a', font: { family: 'Courier New', size: 11 } }, grid: { color: 'rgba(120,120,120,0.1)' } },
+        x: { ticks: { color: '#8f8e8a', font: { family: 'Courier New', size: 11 } }, grid: { display: false } }
+      }
+    }
+  });
+
+  /* Individual stock risk table */
+  renderStockRisk(stocks);
+
+  /* Monte Carlo */
+  runMonteCarlo(portAnn, portVol);
+
+  /* Portfolio risk stats */
+  const maxDD = -(portVol * 2.2 * 0.7);
+  document.getElementById('vol-stats').innerHTML = [
+    { l: 'Ann. volatility (portfolio)', v: (portVol * 100).toFixed(1) + '%' },
+    { l: 'Portfolio std dev',           v: (portVol * 100).toFixed(1) + '%' },
+    { l: 'Portfolio beta',              v: portBeta.toFixed(2) },
+    { l: 'Sharpe ratio',                v: sharpe.toFixed(2) },
+    { l: 'Est. max drawdown',           v: (maxDD * 100).toFixed(1) + '%' },
+    { l: 'Value at Risk (95%)',         v: (-(portVol * 1.645) * 100).toFixed(1) + '% / yr' },
+  ].map(x => `<div class="stat-row"><span class="stat-label">${x.l}</span><span class="stat-val">${x.v}</span></div>`).join('');
+
+  renderCorrelation(stocks);
+  renderScores(portAnn, portVol, sharpe, portBeta, stocks);
+  renderImprovements(portAnn, portVol, sharpe, portBeta, stocks);
+}
+
+/* ── Individual stock risk ────────────────────────────────────────────── */
+function renderStockRisk(stocks) {
+  function riskLabel(vol) {
+    if (vol < 0.18) return { text: 'Low',    cls: 'risk-low' };
+    if (vol < 0.35) return { text: 'Medium', cls: 'risk-med' };
+    return               { text: 'High',   cls: 'risk-high' };
+  }
+  function sharpeColor(s) {
+    if (s >= 1.2) return '#0f6e56';
+    if (s >= 0.7) return '#85500b';
+    return '#a32d2d';
+  }
+  const maxVol = Math.max(...stocks.map(s => s.vol), 0.01);
+  let html = `<div style="overflow-x:auto">
+    <table class="risk-table">
+      <thead><tr>
+        <th>Ticker</th>
+        <th>Ann. return</th>
+        <th>Std dev / vol</th>
+        <th>Visual</th>
+        <th>Beta</th>
+        <th>Sharpe</th>
+        <th>Risk level</th>
+      </tr></thead>
+      <tbody>`;
+  stocks.forEach(s => {
+    const sharpe = (s.ann - 0.045) / s.vol;
+    const r = riskLabel(s.vol);
+    const barW = Math.round((s.vol / maxVol) * 100);
+    const barColor = s.vol < 0.18 ? '#0f6e56' : s.vol < 0.35 ? '#d97b0c' : '#a32d2d';
+    html += `<tr>
+      <td><strong>${s.ticker}</strong><br><span style="font-size:11px;color:#8f8e8a">${escHtml(s.name)}</span></td>
+      <td style="color:${s.ann >= 0 ? '#0f6e56' : '#a32d2d'};font-weight:600;font-family:'Courier New',monospace">${fmtPct(s.ann)}/yr</td>
+      <td style="font-family:'Courier New',monospace">${(s.vol * 100).toFixed(1)}%</td>
+      <td><span class="vol-bar-bg"><span class="vol-bar-fill" style="width:${barW}%;background:${barColor}"></span></span></td>
+      <td style="font-family:'Courier New',monospace">${s.beta.toFixed(2)}</td>
+      <td style="color:${sharpeColor(sharpe)};font-weight:600;font-family:'Courier New',monospace">${sharpe.toFixed(2)}</td>
+      <td><span class="risk-badge ${r.cls}">${r.text}</span></td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>
+    <p class="risk-note">Std dev = annualised volatility &nbsp;·&nbsp; Sharpe = (return − 4.5% risk-free rate) ÷ std dev &nbsp;·&nbsp; Beta vs S&amp;P 500</p>`;
+  document.getElementById('stock-risk-table').innerHTML = html;
+}
+
+/* ── Monte Carlo ──────────────────────────────────────────────────────── */
+function runMonteCarlo(ann, vol) {
+  destroyChart('mc');
+  const steps = 260, sims = 80, dt = 1 / 52;
+  const paths = [];
+  for (let i = 0; i < sims; i++) {
+    let v = 100;
+    const path = [v];
+    for (let t = 0; t < steps; t++) {
+      const z = (Math.random() + Math.random() + Math.random() - 1.5) * 1.4;
+      v *= Math.exp((ann - 0.5 * vol * vol) * dt + vol * Math.sqrt(dt) * z);
+      path.push(+v.toFixed(2));
+    }
+    paths.push(path);
+  }
+  const labels = Array.from({ length: steps + 1 }, (_, i) => i === 0 ? 'Now' : i % 52 === 0 ? 'Y' + (i / 52) : '');
+  const p10 = [], p50 = [], p90 = [];
+  for (let t = 0; t <= steps; t++) {
+    const col = paths.map(p => p[t]).sort((a, b) => a - b);
+    p10.push(+col[Math.floor(col.length * 0.1)].toFixed(2));
+    p50.push(+col[Math.floor(col.length * 0.5)].toFixed(2));
+    p90.push(+col[Math.floor(col.length * 0.9)].toFixed(2));
+  }
+  charts['mc'] = new Chart(document.getElementById('mcChart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: '90th pct', data: p90, borderColor: 'rgba(26,111,196,0.25)', borderWidth: 1, pointRadius: 0, fill: '+1', backgroundColor: 'rgba(26,111,196,0.08)' },
+        { label: 'Median',   data: p50, borderColor: '#1a6fc4', borderWidth: 2, pointRadius: 0, fill: false },
+        { label: '10th pct', data: p10, borderColor: 'rgba(26,111,196,0.25)', borderWidth: 1, pointRadius: 0, fill: false },
+        ...paths.slice(0, 3).map((p, i) => ({ label: 'Path ' + (i+1), data: p, borderColor: 'rgba(150,150,150,0.28)', borderWidth: 1, pointRadius: 0, fill: false }))
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ctx.dataset.label + ': $' + ctx.parsed.y.toFixed(0) } } },
+      scales: {
+        y: { ticks: { callback: v => '$' + v, color: '#8f8e8a', font: { family: 'Courier New', size: 11 } }, grid: { color: 'rgba(120,120,120,0.1)' } },
+        x: { ticks: { autoSkip: true, maxTicksLimit: 6, color: '#8f8e8a', font: { family: 'Courier New', size: 11 } }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+/* ── Correlation ──────────────────────────────────────────────────────── */
+function renderCorrelation(stocks) {
+  if (stocks.length < 2) {
+    document.getElementById('corr-matrix').innerHTML = '<p style="font-size:13px;color:var(--text3);padding:0.5rem 0">Add 2+ stocks to see correlation.</p>';
+    return;
+  }
+  const n = stocks.length;
+  const tech = ['AAPL','MSFT','GOOGL','AMZN','NVDA','TSLA','META','QQQ'];
+  const def  = ['JNJ','BND','GLD'];
+  const mat = Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => {
+    if (i === j) return 1;
+    const seed = (stocks[i].ticker + stocks[j].ticker).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    const x    = Math.sin(seed * 7.3) * 0.5 + 0.5;
+    const iT   = tech.includes(stocks[i].ticker) && tech.includes(stocks[j].ticker);
+    const iD   = def.includes(stocks[i].ticker)  || def.includes(stocks[j].ticker);
+    const base = iT ? 0.6 : iD ? 0.1 : 0.4;
+    return +Math.min(0.99, Math.max(-0.5, base + (x - 0.5) * 0.4)).toFixed(2);
+  }));
+  function corrColor(v) { return v >= 0.8 ? '#F09595' : v >= 0.5 ? '#FAC775' : v >= 0.2 ? '#C0DD97' : v >= -0.1 ? '#9FE1CB' : '#85B7EB'; }
+  let html = '<table class="corr-table"><tr><th></th>' + stocks.map(s => '<th>' + s.ticker + '</th>').join('') + '</tr>';
+  for (let i = 0; i < n; i++) {
+    html += '<tr><th>' + stocks[i].ticker + '</th>';
+    for (let j = 0; j < n; j++) {
+      const v = mat[i][j];
+      html += '<td style="background:' + corrColor(v) + ';color:#2C2C2A;font-weight:' + (i === j ? '600' : '400') + '">' + v.toFixed(2) + '</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</table><div class="corr-legend">' +
+    [{c:'#F09595',l:'High ≥0.8'},{c:'#FAC775',l:'Medium'},{c:'#C0DD97',l:'Low'},{c:'#85B7EB',l:'Negative'}]
+    .map(x => '<span><span class="dot" style="background:' + x.c + '"></span>' + x.l + '</span>').join('') +
+    '</div>';
+  document.getElementById('corr-matrix').innerHTML = html;
+}
+
+/* ── Scores ───────────────────────────────────────────────────────────── */
+function renderScores(ann, vol, sharpe, beta, stocks) {
+  const g = Math.min(100, Math.round((ann / 0.35) * 100));
+  const r = Math.max(0, Math.round(100 - (vol / 0.6) * 100));
+  const d = Math.min(100, Math.round(stocks.length * 12));
+  const o = Math.round(g * 0.4 + r * 0.4 + d * 0.2);
+  document.getElementById('scores').innerHTML = [
+    { l: 'Growth potential', v: g, c: '#1a6fc4' },
+    { l: 'Risk management',  v: r, c: '#0f6e56' },
+    { l: 'Diversification',  v: d, c: '#d97b0c' },
+    { l: 'Overall score',    v: o, c: '#3c3489' },
+  ].map(b => `
+    <div class="score-row">
+      <span class="score-label">${b.l}</span>
+      <div class="score-bar-bg"><div class="score-bar" style="width:${b.v}%;background:${b.c}"></div></div>
+      <span class="score-num">${b.v}/100</span>
+    </div>`).join('');
+}
+
+/* ── Improvements ─────────────────────────────────────────────────────── */
+function renderImprovements(ann, vol, sharpe, beta, stocks) {
+  const issues = [];
+  if (vol > 0.30) issues.push({ tag: 'High volatility', cls: 'tag-danger', text: 'Portfolio volatility exceeds 30% annually. Consider adding lower-beta assets such as bonds (BND) or defensive equities (JNJ) to smooth returns.' });
+  if (sharpe < 0.8) issues.push({ tag: 'Low Sharpe ratio', cls: 'tag-warn', text: 'Sharpe of ' + sharpe.toFixed(2) + ' suggests risk-adjusted returns could improve. Target Sharpe ≥ 1.0 through better stock selection or reduced volatility.' });
+  const techTickers = ['AAPL','MSFT','GOOGL','AMZN','NVDA','TSLA','META','QQQ'];
+  const techW = stocks.filter(s => techTickers.includes(s.ticker)).reduce((a, s) => a + s.weight, 0);
+  if (techW > 0.5) issues.push({ tag: 'Sector concentration', cls: 'tag-warn', text: Math.round(techW * 100) + '% allocated to tech. Consider diversifying into financials, healthcare, or energy to reduce sector risk.' });
+  if (stocks.length < 4) issues.push({ tag: 'Few holdings', cls: 'tag-info', text: 'Fewer than 4 holdings increases idiosyncratic risk. Adding 2–3 uncorrelated assets can reduce volatility without sacrificing expected returns.' });
+  if (beta > 1.4) issues.push({ tag: 'High market beta', cls: 'tag-danger', text: 'Portfolio beta of ' + beta.toFixed(2) + ' means outsized drawdowns in downturns. Low-beta assets like GLD, BND, or JNJ can act as a buffer.' });
+  if (ann > 0.25) issues.push({ tag: 'Return assumptions', cls: 'tag-info', text: 'Projected returns are above long-run market averages. Stress-test against a more conservative scenario with lower expected returns.' });
+  const highRisk = stocks.filter(s => s.vol > 0.40);
+  if (highRisk.length) issues.push({ tag: 'High-risk stocks', cls: 'tag-warn', text: highRisk.map(s => s.ticker).join(', ') + (highRisk.length > 1 ? ' have' : ' has') + ' individual volatility above 40%. Ensure position sizes match your risk tolerance.' });
+  if (!issues.length) issues.push({ tag: 'Looking good', cls: 'tag-ok', text: 'Portfolio looks balanced. Continue monitoring correlation drift and rebalance annually to maintain target weights.' });
+  document.getElementById('improvements').innerHTML = issues.map(i =>
+    '<li><span class="tag ' + i.cls + '">' + i.tag + '</span><span>' + i.text + '</span></li>'
+  ).join('');
+}
+
+/* ── Init ─────────────────────────────────────────────────────────────── */
+addRow('AAPL', 'Apple',       '40');
+addRow('MSFT', 'Microsoft',   '35');
+addRow('SPY',  'S&P 500 ETF', '25');
+updateWeight();
+renderSaved();
+</script>
+</body>
+</html>
